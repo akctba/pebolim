@@ -8,11 +8,14 @@ const teamRightNameEl = document.getElementById("teamRightName");
 const statusTextEl = document.getElementById("statusText");
 const resetBtn = document.getElementById("resetBtn");
 
-const netModeEl = document.getElementById("netMode");
+const netModeDisplayEl = document.getElementById("netModeDisplay");
 const rodsPerSideEl = document.getElementById("rodsPerSide");
 const leftTeamNameInputEl = document.getElementById("leftTeamNameInput");
+const leftTeamColorSelectEl = document.getElementById("leftTeamColorSelect");
 const rightTeamNameInputEl = document.getElementById("rightTeamNameInput");
+const rightTeamColorSelectEl = document.getElementById("rightTeamColorSelect");
 const startGameBtn = document.getElementById("startGameBtn");
+const endGameBtn = document.getElementById("endGameBtn");
 const hostRodSelectEl = document.getElementById("hostRodSelect");
 const assignRodSelectEl = document.getElementById("assignRodSelect");
 const createOfferBtn = document.getElementById("createOfferBtn");
@@ -22,6 +25,7 @@ const createAnswerBtn = document.getElementById("createAnswerBtn");
 const answerOutEl = document.getElementById("answerOut");
 const answerInEl = document.getElementById("answerIn");
 const applyAnswerBtn = document.getElementById("applyAnswerBtn");
+const copyJsonButtons = document.querySelectorAll(".copy-json-btn");
 const netStatusEl = document.getElementById("netStatus");
 const playerRoleEl = document.getElementById("playerRole");
 const openInfoBtn = document.getElementById("openInfoBtn");
@@ -46,6 +50,16 @@ const MIN_RODS_PER_SIDE = 2;
 const MAX_RODS_PER_SIDE = 4;
 const DEFAULT_RODS_PER_SIDE = 4;
 const DEFAULT_TEAM_NAMES = { left: "Team Blue", right: "Team Orange" };
+const TEAM_COLOR_OPTIONS = {
+  left: ["#2aa0ff", "#1d6cff", "#00b7c2", "#2ec27e", "#7d5fff", "#ff5ca8"],
+  right: ["#ff8a3d", "#ff5c3d", "#ff3f6c", "#ffcc33", "#c78bff", "#39c0ed"],
+};
+const DEFAULT_TEAM_COLORS = { left: leftTeamColor, right: rightTeamColor };
+const CAN_HOST = new URLSearchParams(window.location.search).get("host") === "true";
+
+function initialModeFromQuery() {
+  return CAN_HOST ? "host" : "client";
+}
 
 function normalizeRodsPerSide(value) {
   const parsed = Number(value);
@@ -68,6 +82,30 @@ function sanitizeTeamNames(teamNames) {
     left: normalizeTeamName(teamNames?.left, DEFAULT_TEAM_NAMES.left),
     right: normalizeTeamName(teamNames?.right, DEFAULT_TEAM_NAMES.right),
   };
+}
+
+function normalizeTeamColor(team, value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  const allowed = TEAM_COLOR_OPTIONS[team] ?? [];
+  return allowed.includes(normalized) ? normalized : DEFAULT_TEAM_COLORS[team];
+}
+
+function sanitizeTeamColors(teamColors) {
+  return {
+    left: normalizeTeamColor("left", teamColors?.left),
+    right: normalizeTeamColor("right", teamColors?.right),
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  const clean = String(hex ?? "").replace("#", "").trim();
+  if (clean.length !== 6) {
+    return `rgba(255, 255, 255, ${alpha})`;
+  }
+  const r = Number.parseInt(clean.slice(0, 2), 16);
+  const g = Number.parseInt(clean.slice(2, 4), 16);
+  const b = Number.parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 const MASTER_ROD_DEFS = [
@@ -226,6 +264,7 @@ const state = {
   ball: createBall(),
   score: { left: 0, right: 0 },
   teamNames: { ...DEFAULT_TEAM_NAMES },
+  teamColors: { ...DEFAULT_TEAM_COLORS },
   matchDone: false,
   lastScoredBy: "left",
   goalBalloonText: "",
@@ -253,11 +292,25 @@ function refreshRodSelectors() {
   assignRodSelectEl.innerHTML = optionsMarkup;
 
   const hasHostRod = activeConfigs.some((cfg) => cfg.id === previousHostRodId);
-  hostRodSelectEl.value = hasHostRod ? previousHostRodId : activeConfigs[0].id;
+  const preferredHostRod = activeConfigs.find((cfg) => cfg.id === "left-attack") ?? activeConfigs[0];
+  hostRodSelectEl.value = hasHostRod ? previousHostRodId : preferredHostRod?.id ?? "";
   network.hostAssignedRodId = hostRodSelectEl.value;
 
-  const hasAssignRod = activeConfigs.some((cfg) => cfg.id === previousAssignRodId);
-  assignRodSelectEl.value = hasAssignRod ? previousAssignRodId : activeConfigs[0].id;
+  for (const option of assignRodSelectEl.options) {
+    option.disabled = option.value === network.hostAssignedRodId;
+  }
+
+  const hasAssignablePrevious = activeConfigs.some(
+    (cfg) => cfg.id === previousAssignRodId && cfg.id !== network.hostAssignedRodId
+  );
+
+  if (hasAssignablePrevious) {
+    assignRodSelectEl.value = previousAssignRodId;
+    return;
+  }
+
+  const fallback = activeConfigs.find((cfg) => cfg.id !== network.hostAssignedRodId);
+  assignRodSelectEl.value = fallback?.id ?? "";
 }
 
 function applyRodLayout(rodsPerSide) {
@@ -280,6 +333,7 @@ function setRoleText(text) {
 function setGameStarted(isStarted) {
   state.gameStarted = !!isStarted;
   document.body.classList.toggle("game-started", state.gameStarted);
+  applyModeVisibility();
 }
 
 function renderTeamNames() {
@@ -297,6 +351,19 @@ function setTeamNames(nextTeamNames, syncInputs = true) {
     }
     if (rightTeamNameInputEl) {
       rightTeamNameInputEl.value = state.teamNames.right;
+    }
+  }
+}
+
+function setTeamColors(nextTeamColors, syncInputs = true) {
+  state.teamColors = sanitizeTeamColors(nextTeamColors);
+
+  if (syncInputs) {
+    if (leftTeamColorSelectEl) {
+      leftTeamColorSelectEl.value = state.teamColors.left;
+    }
+    if (rightTeamColorSelectEl) {
+      rightTeamColorSelectEl.value = state.teamColors.right;
     }
   }
 }
@@ -661,6 +728,10 @@ function applySnapshot(snapshot) {
     setTeamNames(snapshot.teamNames);
   }
 
+  if (snapshot.teamColors) {
+    setTeamColors(snapshot.teamColors);
+  }
+
   if (typeof snapshot.gameStarted === "boolean") {
     setGameStarted(snapshot.gameStarted);
   }
@@ -700,6 +771,7 @@ function buildSnapshot() {
     type: "snapshot",
     gameStarted: state.gameStarted,
     teamNames: { ...state.teamNames },
+    teamColors: { ...state.teamColors },
     goalBalloonText: state.goalBalloonText,
     goalBalloonTeam: state.goalBalloonTeam,
     goalBalloonActive: state.goalBalloonUntilMs > 0,
@@ -721,6 +793,23 @@ function sendToPeer(dataChannel, payload) {
   if (dataChannel && dataChannel.readyState === "open") {
     dataChannel.send(JSON.stringify(payload));
   }
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const helper = document.createElement("textarea");
+  helper.value = text;
+  helper.setAttribute("readonly", "true");
+  helper.style.position = "absolute";
+  helper.style.left = "-9999px";
+  document.body.appendChild(helper);
+  helper.select();
+  document.execCommand("copy");
+  document.body.removeChild(helper);
 }
 
 function broadcastSnapshot(nowMs) {
@@ -832,8 +921,9 @@ function drawRodsAndPlayers() {
   const footWidth = 12;
 
   for (const rod of state.rods) {
-    const rodColor = rod.team === "left" ? "rgba(42,160,255,0.88)" : "rgba(255,138,61,0.88)";
-    const playerColor = rod.team === "left" ? leftTeamColor : rightTeamColor;
+    const teamColor = rod.team === "left" ? state.teamColors.left : state.teamColors.right;
+    const rodColor = hexToRgba(teamColor, 0.88);
+    const playerColor = teamColor;
     const facingDir = rod.team === "left" ? 1 : -1;
     const isSpinning = effectiveSpinForRod(rod);
     const visibleReach = rod.footReach;
@@ -921,8 +1011,8 @@ function drawGoalBalloon() {
   const bubbleHeight = 86;
   const x = FIELD_WIDTH / 2 - bubbleWidth / 2;
   const y = 42;
-  const balloonFill =
-    state.goalBalloonTeam === "right" ? "rgba(255, 138, 61, 0.94)" : "rgba(42, 160, 255, 0.94)";
+  const balloonTeamColor = state.goalBalloonTeam === "right" ? state.teamColors.right : state.teamColors.left;
+  const balloonFill = hexToRgba(balloonTeamColor, 0.94);
 
   ctx.fillStyle = balloonFill;
   ctx.strokeStyle = "rgba(18, 32, 46, 0.85)";
@@ -977,6 +1067,10 @@ function closeAllNetworkConnections() {
 
 function applyModeVisibility() {
   document.body.dataset.netMode = network.mode;
+  document.body.dataset.canHost = CAN_HOST ? "true" : "false";
+  if (netModeDisplayEl) {
+    netModeDisplayEl.textContent = CAN_HOST ? "HOST" : "PLAYER";
+  }
   if (rodsPerSideEl) {
     rodsPerSideEl.disabled = network.mode !== "host";
   }
@@ -986,8 +1080,17 @@ function applyModeVisibility() {
   if (rightTeamNameInputEl) {
     rightTeamNameInputEl.disabled = network.mode !== "host";
   }
+  if (leftTeamColorSelectEl) {
+    leftTeamColorSelectEl.disabled = network.mode !== "host";
+  }
+  if (rightTeamColorSelectEl) {
+    rightTeamColorSelectEl.disabled = network.mode !== "host";
+  }
   if (startGameBtn) {
     startGameBtn.disabled = network.mode !== "host" || state.gameStarted;
+  }
+  if (endGameBtn) {
+    endGameBtn.disabled = network.mode !== "host" || !state.gameStarted;
   }
 }
 
@@ -1004,8 +1107,8 @@ function refreshRoleText() {
 }
 
 function setMode(nextMode) {
-  network.mode = nextMode;
-  netModeEl.value = nextMode;
+  const resolvedMode = CAN_HOST ? nextMode : "client";
+  network.mode = resolvedMode;
   setGameStarted(false);
   closeAllNetworkConnections();
   clearRodOwners();
@@ -1014,7 +1117,7 @@ function setMode(nextMode) {
   answerOutEl.value = "";
   applyModeVisibility();
 
-  if (nextMode === "host") {
+  if (resolvedMode === "host") {
     setNetStatus("Host mode: create offer, share it, then apply answer");
   } else {
     setNetStatus("Join mode: paste host offer and create answer");
@@ -1110,6 +1213,10 @@ function handleClientData(message) {
       setTeamNames(message.teamNames);
     }
 
+    if (message.teamColors) {
+      setTeamColors(message.teamColors);
+    }
+
     if (typeof message.rodsPerSide === "number") {
       network.rodsPerSide = normalizeRodsPerSide(message.rodsPerSide);
       if (rodsPerSideEl) {
@@ -1144,6 +1251,7 @@ function setupHostDataChannel(peerId, rodId, dataChannel, pc) {
       assignedRodId: rodId,
       rodsPerSide: network.rodsPerSide,
       teamNames: { ...state.teamNames },
+      teamColors: { ...state.teamColors },
     });
     sendToPeer(dataChannel, buildSnapshot());
     setNetStatus(`Host connected players: ${network.peers.size}`);
@@ -1193,6 +1301,7 @@ async function createOfferForJoiner() {
     assignedRodId,
     rodsPerSide: network.rodsPerSide,
     teamNames: { ...state.teamNames },
+    teamColors: { ...state.teamColors },
     sdp: pc.localDescription,
   };
 
@@ -1266,6 +1375,10 @@ async function createAnswerFromOffer() {
     setTeamNames(payload.teamNames);
   }
 
+  if (payload.teamColors) {
+    setTeamColors(payload.teamColors);
+  }
+
   closePeer(network.clientConnection);
   network.clientConnection = null;
 
@@ -1318,6 +1431,7 @@ async function createAnswerFromOffer() {
     assignedRodId: payload.assignedRodId,
     rodsPerSide: network.rodsPerSide,
     teamNames: { ...state.teamNames },
+    teamColors: { ...state.teamColors },
     sdp: pc.localDescription,
   };
 
@@ -1414,12 +1528,9 @@ resetBtn.addEventListener("click", () => {
   resetMatch();
 });
 
-netModeEl.addEventListener("change", () => {
-  setMode(netModeEl.value);
-});
-
 hostRodSelectEl.addEventListener("change", () => {
   network.hostAssignedRodId = hostRodSelectEl.value;
+  refreshRodSelectors();
   if (network.mode === "host") {
     refreshRoleText();
   }
@@ -1441,6 +1552,22 @@ rightTeamNameInputEl?.addEventListener("input", () => {
   setTeamNames({ left: state.teamNames.left, right: rightTeamNameInputEl.value }, false);
 });
 
+leftTeamColorSelectEl?.addEventListener("change", () => {
+  if (network.mode !== "host") {
+    leftTeamColorSelectEl.value = state.teamColors.left;
+    return;
+  }
+  setTeamColors({ left: leftTeamColorSelectEl.value, right: state.teamColors.right }, false);
+});
+
+rightTeamColorSelectEl?.addEventListener("change", () => {
+  if (network.mode !== "host") {
+    rightTeamColorSelectEl.value = state.teamColors.right;
+    return;
+  }
+  setTeamColors({ left: state.teamColors.left, right: rightTeamColorSelectEl.value }, false);
+});
+
 startGameBtn?.addEventListener("click", () => {
   if (network.mode !== "host") {
     return;
@@ -1453,6 +1580,23 @@ startGameBtn?.addEventListener("click", () => {
   setGameStarted(true);
   setNetStatus("Match started");
   updateHud("First team to 7 wins");
+  broadcastSnapshot(performance.now());
+});
+
+endGameBtn?.addEventListener("click", () => {
+  if (network.mode !== "host" || !state.gameStarted) {
+    return;
+  }
+
+  setGameStarted(false);
+  state.goalBalloonText = "";
+  state.goalBalloonTeam = null;
+  state.goalBalloonUntilMs = 0;
+  state.pendingRestartTeam = null;
+  state.ballReleaseAtMs = 0;
+  centerBallStill();
+  setNetStatus("Match ended by host");
+  updateHud("Game ended by host");
   broadcastSnapshot(performance.now());
 });
 
@@ -1475,6 +1619,35 @@ applyAnswerBtn?.addEventListener("click", () => {
 createAnswerBtn?.addEventListener("click", () => {
   createAnswerFromOffer().catch(() => {
     setNetStatus("Failed to create answer");
+  });
+});
+
+copyJsonButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const targetId = button.getAttribute("data-target");
+    if (!targetId) {
+      return;
+    }
+
+    const targetEl = document.getElementById(targetId);
+    if (!(targetEl instanceof HTMLTextAreaElement)) {
+      setNetStatus("Copy target not found");
+      return;
+    }
+
+    const value = targetEl.value.trim();
+    if (!value) {
+      setNetStatus("Nothing to copy");
+      return;
+    }
+
+    copyTextToClipboard(value)
+      .then(() => {
+        setNetStatus("JSON copied to clipboard");
+      })
+      .catch(() => {
+        setNetStatus("Failed to copy JSON");
+      });
   });
 });
 
@@ -1503,8 +1676,9 @@ if (rodsPerSideEl) {
   rodsPerSideEl.value = String(network.rodsPerSide);
 }
 setTeamNames(state.teamNames);
+setTeamColors(state.teamColors);
 setGameStarted(false);
 refreshRodSelectors();
 updateHud();
-setMode("host");
+setMode(initialModeFromQuery());
 stepGame();

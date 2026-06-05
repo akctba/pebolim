@@ -52,14 +52,26 @@ Then open:
 
 - http://localhost:8080
 
+## Host Query Parameter
+
+The app uses a URL query parameter to define whether a browser session is the host.
+
+- `?host=true` => opens in host mode (`HOST`)
+- no `host` parameter => opens in participant mode (`PLAYER`)
+
+Examples:
+
+- Host URL: `http://localhost:8080/?host=true`
+- Player URL: `http://localhost:8080/`
+
 ## How To Play
 
 ### Online (multiple devices)
 
-1. On one device, set Mode to `Host Match`.
+1. Open one device with `?host=true` so it becomes `HOST`.
 2. Select which rod to assign to the next joiner.
 3. Click `Create Offer` and share that JSON with the joiner.
-4. On the joiner device, set Mode to `Join Match`.
+4. On joiner devices, open without `?host=true` so they are `PLAYER`.
 5. Paste offer JSON, click `Create Answer`, send answer JSON back.
 6. Host pastes answer JSON and clicks `Apply Answer`.
 7. Repeat for additional players/rods.

@@ -28,7 +28,10 @@
           </div>
           <div class="hud-center">
             <span id="statusText">First team to 7 wins</span>
-            <button id="resetBtn" type="button">Reset Match</button>
+            <div class="hud-actions host-only">
+              <button id="resetBtn" type="button">Reset Match</button>
+              <button id="endGameBtn" type="button">End Game</button>
+            </div>
           </div>
           <div class="score-card team-right">
             <span class="team-name" id="teamRightName">Team Orange</span>
@@ -69,11 +72,8 @@
           <p class="tip">Choose Host on one device and Join on others. Exchange signaling JSON manually.</p>
 
           <div class="mode-row">
-            <label for="netMode">Mode</label>
-            <select id="netMode">
-              <option value="host" selected>Host Match</option>
-              <option value="client">Join Match</option>
-            </select>
+            <label for="netModeDisplay">Mode</label>
+            <span id="netModeDisplay" class="mode-display">HOST</span>
           </div>
 
           <div class="mode-row host-only">
@@ -91,8 +91,32 @@
           </div>
 
           <div class="mode-row host-only">
+            <label for="leftTeamColorSelect">Left team color</label>
+            <select id="leftTeamColorSelect">
+              <option value="#2aa0ff" selected>Sky Blue</option>
+              <option value="#1d6cff">Royal Blue</option>
+              <option value="#00b7c2">Cyan</option>
+              <option value="#2ec27e">Green</option>
+              <option value="#7d5fff">Indigo</option>
+              <option value="#ff5ca8">Pink</option>
+            </select>
+          </div>
+
+          <div class="mode-row host-only">
             <label for="rightTeamNameInput">Right team name</label>
             <input id="rightTeamNameInput" type="text" maxlength="22" value="Team Orange" />
+          </div>
+
+          <div class="mode-row host-only">
+            <label for="rightTeamColorSelect">Right team color</label>
+            <select id="rightTeamColorSelect">
+              <option value="#ff8a3d" selected>Orange</option>
+              <option value="#ff5c3d">Red Orange</option>
+              <option value="#ff3f6c">Crimson</option>
+              <option value="#ffcc33">Gold</option>
+              <option value="#c78bff">Lavender</option>
+              <option value="#39c0ed">Aqua</option>
+            </select>
           </div>
 
           <div class="mode-row host-only start-row">
@@ -106,7 +130,7 @@
               <option value="left-goalie">Blue Goalie</option>
               <option value="left-defense">Blue Defense</option>
               <option value="left-mid">Blue Mid</option>
-              <option value="left-attack">Blue Attack</option>
+              <option value="left-attack" selected>Blue Attack</option>
               <option value="right-goalie">Orange Goalie</option>
               <option value="right-defense">Orange Defense</option>
               <option value="right-mid">Orange Mid</option>
@@ -130,6 +154,7 @@
               </select>
               <button id="createOfferBtn" type="button">Create Offer</button>
               <textarea id="offerOut" readonly placeholder="Share this offer JSON with one player"></textarea>
+              <button type="button" class="copy-json-btn" data-target="offerOut">Copy JSON</button>
             </article>
 
             <article class="signal-card client-only">

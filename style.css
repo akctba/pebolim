@@ -264,6 +264,12 @@ body.game-started .net-panel {
   gap: 0.35rem;
 }
 
+.hud-actions {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
 #statusText {
   font-size: 0.9rem;
   font-weight: 500;
@@ -288,6 +294,29 @@ body.game-started .net-panel {
 }
 
 #resetBtn:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+#endGameBtn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.48rem 0.95rem;
+  background: linear-gradient(90deg, #ffb79f, #ff7f5a);
+  color: #3b1409;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+#endGameBtn:hover {
+  transform: translateY(-2px);
+}
+
+#endGameBtn:active {
   transform: translateY(1px);
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
 }
@@ -371,6 +400,18 @@ body.game-started .net-panel {
   opacity: 0.9;
 }
 
+.mode-display {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(6, 17, 28, 0.66);
+  color: var(--ink-soft);
+  padding: 0.45rem 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .start-row {
   align-items: center;
 }
@@ -452,6 +493,9 @@ textarea {
   color: #062235;
   font-weight: 700;
   cursor: pointer;
+.copy-json-btn {
+  margin-top: 0.3rem;
+}
 }
 
 .signal-card button:hover {
@@ -475,6 +519,10 @@ textarea {
 
 body[data-net-mode="host"] .client-only,
 body[data-net-mode="client"] .host-only {
+  display: none;
+}
+
+body[data-can-host="false"] .host-only {
   display: none;
 }
 
