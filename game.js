@@ -61,6 +61,161 @@ const SIGNAL_ENVELOPE_VERSION = 1;
 const SIGNAL_TOKEN_PREFIX = "pebolim1:";
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+const LOCALE = navigator.language?.toLowerCase().startsWith("pt-br") ? "pt-BR" : "en";
+const IS_PT_BR = LOCALE === "pt-BR";
+
+const PT_BR = {
+  title: "Pebolim | Multijogador HTML5 Online",
+  eyebrow: "BATALHA ONLINE",
+  howToPlayCredits: "Como Jogar + Créditos",
+  controlsLayout: "Controles",
+  hostPlayer: "Jogador Host",
+  remotePlayer: "Jogador Remoto",
+  movesHostRod: "Move a barra selecionada: W / S",
+  spinHostRod: "Gira a barra selecionada: Espaço",
+  selectHostRod: "Selecione a barra do host no painel de Partida Online",
+  moveAssignedRod: "Move a barra atribuída: W / S",
+  spinAssignedRod: "Gira a barra atribuída: Espaço",
+  hostAssignsRod: "O host atribui uma barra para cada jogador conectado",
+  hostCanRepeat: "O host pode repetir ofertas para vários jogadores",
+  multiplePlayers: "Vários jogadores podem ser conectados em cada lado atribuindo barras diferentes.",
+  onlineMatch: "Partida Online (WebRTC, sem backend)",
+  exchangeSignals: "Escolha Host em um dispositivo e Join em outros. Troque o JSON de sinalização manualmente.",
+  modeLabel: "Modo",
+  hostMode: "HOSPEDEIRO",
+  playerMode: "JOGADOR",
+  rodsPerSide: "Barras por lado",
+  matchName: "Nome da partida",
+  required: "Obrigatório",
+  leftTeamName: "Nome do time esquerdo",
+  leftTeamColor: "Cor do time esquerdo",
+  rightTeamName: "Nome do time direito",
+  rightTeamColor: "Cor do time direito",
+  ready: "Pronto?",
+  hostRod: "Barra do host (W/S)",
+  assignRod: "Atribuir barra ao próximo jogador",
+  createOffer: "Criar oferta",
+  hostCreateOfferCard: "Host: Criar oferta",
+  shareOffer: "Compartilhe esta oferta com um jogador",
+  copyJson: "Copiar",
+  joinerCreateAnswer: "Participante: Criar resposta",
+  pasteHostOffer: "Cole a oferta do host aqui",
+  createAnswer: "Criar resposta",
+  joinerCreateAnswerButton: "Criar resposta",
+  hostApplyAnswer: "Host: Aplicar resposta",
+  sendAnswerBack: "Envie esta resposta ao host",
+  pasteAnswer: "Cole a resposta desse jogador",
+  applyAnswer: "Aplicar resposta",
+  hostStatus: "Modo Host: criar oferta, compartilhar e depois aplicar a resposta",
+  joinStatus: "Modo Join: cole a oferta do host e crie a resposta",
+  firstTeamTo7: "Primeiro time a marcar 7 gols vence",
+  resetMatch: "Reiniciar partida",
+  endGame: "Encerrar partida",
+  startGame: "Iniciar partida",
+  roleHost: (rodLabel) => `Papel: Host (W/S em ${rodLabel})`,
+  roleJoin: (label) => `Papel: Participante (${label})`,
+  waitingAssignment: "aguardando atribuição",
+  hostConnectedPlayers: (count) => `Host conectado com ${count} jogador${count === 1 ? "" : "es"}`,
+  connectedToHost: (label) => `Conectado ao host. Atribuído: ${label}`,
+  offerCreated: (label) => `Oferta criada para ${label}. Aguardando resposta...`,
+  joinerConnected: (rodLabel, count) => `Participante conectado em ${rodLabel}. Jogadores conectados: ${count}`,
+  gameStarted: "Partida iniciada",
+  gameEndedByHost: "Partida encerrada pelo host",
+  matchResetByHost: (count) => `Barras por lado do host: ${count}. Partida reiniciada.`,
+  matchNameRequired: "O nome da partida é obrigatório",
+  switchHostFirst: "Mude para o modo Host primeiro",
+  switchJoinFirst: "Mude para o modo Join primeiro",
+  answerInvalid: "A resposta é inválida",
+  answerInvalidOrWrongName: "A resposta é inválida ou o nome da partida está errado",
+  answerMissingFields: "A resposta não tem os campos obrigatórios",
+  noMatchingOffer: "Nenhuma oferta pendente corresponde a este peerId",
+  offerInvalid: "A oferta é inválida",
+  offerInvalidOrWrongName: "A oferta é inválida ou o nome da partida está errado",
+  offerMissingFields: "A oferta não tem os campos obrigatórios",
+  answerCreated: "Resposta criada. Envie ao host.",
+  connectedToHostAssigned: (label) => `Conectado ao host. Atribuído: ${label}`,
+  disconnectedFromHost: "Desconectado do host",
+  failedCreateOffer: "Falha ao criar oferta",
+  failedApplyAnswer: "Falha ao aplicar resposta",
+  failedCreateAnswer: "Falha ao criar resposta",
+  copyTargetNotFound: "Destino da cópia não encontrado",
+  nothingToCopy: "Nada para copiar",
+  jsonCopied: "JSON copiado para a área de transferência",
+  failedCopyJson: "Falha ao copiar JSON",
+  answerJsonCopied: "Resposta JSON copiada para a área de transferência",
+  failedCopyAnswer: "Falha ao copiar a resposta JSON",
+  openHostMatch: "Abrir partida como host",
+  beAHost: "Seja host:",
+  closeInfo: "Fechar",
+  closeInfoAria: "Fechar informações",
+  infoTitle: "Pebolim Info",
+  gameInstructions: "Instruções do jogo",
+  credits: "Créditos",
+  playHint: "Abra o jogo em uma aba/dispositivo e escolha <strong>Host Match</strong> para jogar online.",
+  playStep2: "Para cada jogador remoto: selecione uma barra, crie uma oferta e envie o texto ao participante.",
+  playStep3: "Participantes escolhem <strong>Join Match</strong>, colam a oferta, criam uma resposta e enviam de volta ao host.",
+  playStep4: "O host cola cada resposta e a aplica para conectar os jogadores um por um.",
+  playStep5: "O primeiro time a marcar 7 gols vence.",
+  controlsJoiner: "O jogador conectado controla a barra atribuída com <strong>W / S</strong>.",
+  controlsHost: "O host controla uma barra selecionada com <strong>W / S</strong>.",
+  controlsSpin: "Gire a barra controlada com <strong>Espaço</strong>.",
+  controlsReset: "Reiniciar partida redefine o placar e a posição da bola.",
+  createdBy: "Criado com GitHub Copilot (GPT-5.3-Codex).",
+};
+
+const RUNTIME_TRANSLATIONS = [
+  [/^First team to 7 wins$/, PT_BR.firstTeamTo7],
+  [/^Match started$/, PT_BR.gameStarted],
+  [/^Game ended by host$/, PT_BR.gameEndedByHost],
+  [/^Match ended by host$/, PT_BR.gameEndedByHost],
+  [/^Match name is required$/, PT_BR.matchNameRequired],
+  [/^Host mode: create offer, share it, then apply answer$/, PT_BR.hostStatus],
+  [/^Join mode: paste host offer and create answer$/, PT_BR.joinStatus],
+  [/^Switch mode to Host first$/, PT_BR.switchHostFirst],
+  [/^Switch mode to Join first$/, PT_BR.switchJoinFirst],
+  [/^Answer JSON missing required fields$/, PT_BR.answerMissingFields],
+  [/^Offer JSON missing required fields$/, PT_BR.offerMissingFields],
+  [/^No matching pending offer for this peerId$/, PT_BR.noMatchingOffer],
+  [/^Answer is invalid or Match name is wrong$/, PT_BR.answerInvalidOrWrongName],
+  [/^Answer is invalid$/, PT_BR.answerInvalid],
+  [/^Offer is invalid or Match name is wrong$/, PT_BR.offerInvalidOrWrongName],
+  [/^Offer is invalid$/, PT_BR.offerInvalid],
+  [/^Failed to create offer$/, PT_BR.failedCreateOffer],
+  [/^Failed to apply answer$/, PT_BR.failedApplyAnswer],
+  [/^Failed to create answer$/, PT_BR.failedCreateAnswer],
+  [/^Copy target not found$/, PT_BR.copyTargetNotFound],
+  [/^Nothing to copy$/, PT_BR.nothingToCopy],
+  [/^JSON copied to clipboard$/, PT_BR.jsonCopied],
+  [/^Failed to copy JSON$/, PT_BR.failedCopyJson],
+  [/^Answer JSON copied to clipboard$/, PT_BR.answerJsonCopied],
+  [/^Failed to copy answer JSON$/, PT_BR.failedCopyAnswer],
+  [/^Answer created\. Send it back to host\.$/, PT_BR.answerCreated],
+  [/^Host rods per side: (\d+)\. Match reset\.$/, (_match, count) => PT_BR.matchResetByHost(count)],
+  [/^Host connected players: (\d+)$/, (_match, count) => PT_BR.hostConnectedPlayers(Number(count))],
+  [/^Connected to host\. Assigned: (.+)$/, (_match, label) => PT_BR.connectedToHost(label)],
+  [/^Offer created for (.+)\. Waiting for answer\.\.\.$/, (_match, label) => PT_BR.offerCreated(label)],
+  [/^Joiner connected on (.+)\. Connected players: (\d+)$/, (_match, rodLabel, count) => PT_BR.joinerConnected(rodLabel, count)],
+  [/^Role: Host \(W\/S on (.+)\)$/, (_match, rodLabel) => PT_BR.roleHost(rodLabel)],
+  [/^Role: Joiner \((.+)\)$/, (_match, label) => PT_BR.roleJoin(label)],
+];
+
+function t(value) {
+  return IS_PT_BR ? PT_BR[value] ?? value : value;
+}
+
+function translateRuntimeText(text) {
+  if (!IS_PT_BR || typeof text !== "string") {
+    return text;
+  }
+
+  for (const [pattern, replacement] of RUNTIME_TRANSLATIONS) {
+    if (pattern.test(text)) {
+      return text.replace(pattern, replacement);
+    }
+  }
+
+  return text;
+}
 
 function initialModeFromQuery() {
   return CAN_HOST ? "host" : "client";
@@ -431,11 +586,11 @@ function applyRodLayout(rodsPerSide) {
 }
 
 function setNetStatus(text) {
-  netStatusEl.textContent = text;
+  netStatusEl.textContent = translateRuntimeText(text);
 }
 
 function setRoleText(text) {
-  playerRoleEl.textContent = text;
+  playerRoleEl.textContent = translateRuntimeText(text);
 }
 
 function setGameStarted(isStarted) {
@@ -941,12 +1096,12 @@ function updateHud(statusOverride) {
   scoreRightEl.textContent = String(state.score.right);
 
   if (statusOverride) {
-    statusTextEl.textContent = statusOverride;
+    statusTextEl.textContent = translateRuntimeText(statusOverride);
     return;
   }
 
   if (!state.matchDone && state.score.left === 0 && state.score.right === 0) {
-    statusTextEl.textContent = "First team to 7 wins";
+    statusTextEl.textContent = t("firstTeamTo7");
   }
 }
 
@@ -1177,7 +1332,7 @@ function applyModeVisibility() {
   document.body.dataset.netMode = network.mode;
   document.body.dataset.canHost = CAN_HOST ? "true" : "false";
   if (netModeDisplayEl) {
-    netModeDisplayEl.textContent = CAN_HOST ? "HOST" : "PLAYER";
+    netModeDisplayEl.textContent = CAN_HOST ? t("hostMode") : t("playerMode");
   }
   if (rodsPerSideEl) {
     rodsPerSideEl.disabled = network.mode !== "host";
@@ -1209,8 +1364,157 @@ function refreshRoleText() {
   }
 
   if (network.mode === "client") {
-    const label = network.clientAssignedRodId ? rodLabel(network.clientAssignedRodId) : "waiting assignment";
+    const label = network.clientAssignedRodId ? rodLabel(network.clientAssignedRodId) : t("waitingAssignment");
     setRoleText(`Role: Joiner (${label})`);
+  }
+}
+
+function applyLocalization() {
+  document.documentElement.lang = LOCALE;
+
+  if (!IS_PT_BR) {
+    return;
+  }
+
+  document.title = t("title");
+
+  const eyebrowEl = document.querySelector(".eyebrow");
+  if (eyebrowEl) {
+    eyebrowEl.textContent = t("eyebrow");
+  }
+
+  if (openInfoBtn) {
+    openInfoBtn.textContent = t("howToPlayCredits");
+  }
+
+  const controlsPanelTitle = document.querySelector(".controls-panel h2");
+  if (controlsPanelTitle) {
+    controlsPanelTitle.textContent = t("controlsLayout");
+  }
+
+  const controlCards = document.querySelectorAll(".controls-grid article");
+  const hostControlTitle = controlCards[0]?.querySelector("h3");
+  const remoteControlTitle = controlCards[1]?.querySelector("h3");
+  const hostControlItems = controlCards[0]?.querySelectorAll("li") ?? [];
+  const remoteControlItems = controlCards[1]?.querySelectorAll("li") ?? [];
+  if (hostControlTitle) hostControlTitle.textContent = t("hostPlayer");
+  if (remoteControlTitle) remoteControlTitle.textContent = t("remotePlayer");
+  if (hostControlItems[0]) hostControlItems[0].textContent = t("movesHostRod");
+  if (hostControlItems[1]) hostControlItems[1].textContent = t("spinHostRod");
+  if (hostControlItems[2]) hostControlItems[2].textContent = t("selectHostRod");
+  if (remoteControlItems[0]) remoteControlItems[0].textContent = t("moveAssignedRod");
+  if (remoteControlItems[1]) remoteControlItems[1].textContent = t("spinAssignedRod");
+  if (remoteControlItems[2]) remoteControlItems[2].textContent = t("hostAssignsRod");
+  if (remoteControlItems[3]) remoteControlItems[3].textContent = t("hostCanRepeat");
+
+  const controlsTip = document.querySelector(".controls-panel .tip");
+  if (controlsTip) {
+    controlsTip.textContent = t("multiplePlayers");
+  }
+
+  const netPanelTitle = document.querySelector(".net-panel h2");
+  const netPanelTip = document.querySelector(".net-panel .tip");
+  if (netPanelTitle) netPanelTitle.textContent = t("onlineMatch");
+  if (netPanelTip) netPanelTip.textContent = t("exchangeSignals");
+
+  const modeLabel = document.querySelector('.mode-row label[for="netModeDisplay"]');
+  if (modeLabel) modeLabel.textContent = t("modeLabel");
+
+  const rodsLabel = document.querySelector('.mode-row label[for="rodsPerSide"]');
+  if (rodsLabel) rodsLabel.textContent = t("rodsPerSide");
+  rodsPerSideEl?.querySelectorAll("option").forEach((option) => {
+    if (option.value === "2") option.textContent = "2 (Goleiro + Ataque)";
+    if (option.value === "3") option.textContent = "3 (Goleiro + Meio + Ataque)";
+    if (option.value === "4") option.textContent = "4 (Goleiro + Defesa + Meio + Ataque)";
+  });
+
+  const matchLabel = document.querySelector('.mode-row label[for="matchNameInput"]');
+  if (matchLabel) matchLabel.textContent = t("matchName");
+  if (matchNameInputEl) matchNameInputEl.placeholder = t("required");
+
+  const leftTeamLabel = document.querySelector('.mode-row label[for="leftTeamNameInput"]');
+  const rightTeamLabel = document.querySelector('.mode-row label[for="rightTeamNameInput"]');
+  const leftColorLabel = document.querySelector('.mode-row label[for="leftTeamColorSelect"]');
+  const rightColorLabel = document.querySelector('.mode-row label[for="rightTeamColorSelect"]');
+  if (leftTeamLabel) leftTeamLabel.textContent = t("leftTeamName");
+  if (rightTeamLabel) rightTeamLabel.textContent = t("rightTeamName");
+  if (leftColorLabel) leftColorLabel.textContent = t("leftTeamColor");
+  if (rightColorLabel) rightColorLabel.textContent = t("rightTeamColor");
+
+  const readyLabel = document.querySelector(".start-row span");
+  if (readyLabel) readyLabel.textContent = t("ready");
+  if (startGameBtn) startGameBtn.textContent = t("startGame");
+
+  const hostRodLabel = document.querySelector('.mode-row label[for="hostRodSelect"]');
+  if (hostRodLabel) hostRodLabel.textContent = t("hostRod");
+
+  const signalCards = document.querySelectorAll(".signal-card");
+  const hostOfferTitle = signalCards[0]?.querySelector("h3");
+  const joinTitle = signalCards[1]?.querySelector("h3");
+  const applyTitle = signalCards[2]?.querySelector("h3");
+  if (hostOfferTitle) hostOfferTitle.textContent = t("hostCreateOfferCard");
+  if (joinTitle) joinTitle.textContent = t("joinerCreateAnswer");
+  if (applyTitle) applyTitle.textContent = t("hostApplyAnswer");
+
+  const assignLabel = document.querySelector('.signal-card.host-only label[for="assignRodSelect"]');
+  if (assignLabel) assignLabel.textContent = t("assignRod");
+  if (createOfferBtn) createOfferBtn.textContent = t("createOffer");
+  if (createAnswerBtn) createAnswerBtn.textContent = t("createAnswer");
+  if (applyAnswerBtn) applyAnswerBtn.textContent = t("applyAnswer");
+
+  if (offerOutEl) offerOutEl.placeholder = t("shareOffer");
+  if (offerInEl) offerInEl.placeholder = t("pasteHostOffer");
+  if (answerOutEl) answerOutEl.placeholder = t("sendAnswerBack");
+  if (answerInEl) answerInEl.placeholder = t("pasteAnswer");
+
+  document.querySelectorAll(".copy-json-btn").forEach((button) => {
+    button.textContent = t("copyJson");
+  });
+
+  const statusText = document.getElementById("statusText");
+  if (statusText && statusText.textContent === "First team to 7 wins") {
+    statusText.textContent = t("firstTeamTo7");
+  }
+
+  const netStatus = document.getElementById("netStatus");
+  if (netStatus && netStatus.textContent === "Host mode: create offer, share it, then apply answer") {
+    netStatus.textContent = t("hostStatus");
+  }
+
+  const infoTitle = document.getElementById("infoModalTitle");
+  const closeInfo = document.getElementById("closeInfoBtn");
+  const infoCards = document.querySelectorAll("#infoModal .info-card");
+  if (infoTitle) infoTitle.textContent = t("infoTitle");
+  if (closeInfo) {
+    closeInfo.textContent = t("closeInfo");
+    closeInfo.setAttribute("aria-label", t("closeInfoAria"));
+  }
+  if (infoCards[0]) {
+    const items = infoCards[0].querySelectorAll("li");
+    infoCards[0].querySelector("h3").textContent = t("gameInstructions");
+    if (items[0]) items[0].innerHTML = t("playHint");
+    if (items[1]) items[1].innerHTML = t("playStep2");
+    if (items[2]) items[2].innerHTML = t("playStep3");
+    if (items[3]) items[3].innerHTML = t("playStep4");
+    if (items[4]) items[4].innerHTML = t("playStep5");
+  }
+  if (infoCards[1]) {
+    const items = infoCards[1].querySelectorAll("li");
+    infoCards[1].querySelector("h3").textContent = t("controlsLayout");
+    if (items[0]) items[0].innerHTML = t("controlsJoiner");
+    if (items[1]) items[1].innerHTML = t("controlsHost");
+    if (items[2]) items[2].innerHTML = t("controlsSpin");
+    if (items[3]) items[3].innerHTML = t("controlsReset");
+  }
+  if (infoCards[2]) {
+    const paragraphs = infoCards[2].querySelectorAll("p");
+    infoCards[2].querySelector("h3").textContent = t("credits");
+    if (paragraphs[0]) paragraphs[0].textContent = t("createdBy");
+    if (paragraphs[1]) {
+      const link = paragraphs[1].querySelector("a");
+      paragraphs[1].firstChild.textContent = `${t("beAHost")} `;
+      if (link) link.textContent = t("openHostMatch");
+    }
   }
 }
 
@@ -1823,6 +2127,7 @@ window.addEventListener("keydown", (event) => {
 if (rodsPerSideEl) {
   rodsPerSideEl.value = String(network.rodsPerSide);
 }
+applyLocalization();
 setTeamNames(state.teamNames);
 setTeamColors(state.teamColors);
 setGameStarted(false);
