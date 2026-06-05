@@ -85,6 +85,18 @@
             </select>
           </div>
 
+          <div class="mode-row">
+            <label for="matchNameInput">Match name</label>
+            <input
+              id="matchNameInput"
+              type="text"
+              maxlength="64"
+              placeholder="Required"
+              required
+              autocomplete="off"
+            />
+          </div>
+
           <div class="mode-row host-only">
             <label for="leftTeamNameInput">Left team name</label>
             <input id="leftTeamNameInput" type="text" maxlength="22" value="Team Blue" />
@@ -153,20 +165,20 @@
                 <option value="right-attack">Orange Attack</option>
               </select>
               <button id="createOfferBtn" type="button">Create Offer</button>
-              <textarea id="offerOut" readonly placeholder="Share this offer JSON with one player"></textarea>
+              <textarea id="offerOut" readonly placeholder="Share this offer with one player"></textarea>
               <button type="button" class="copy-json-btn" data-target="offerOut">Copy JSON</button>
             </article>
 
             <article class="signal-card client-only">
               <h3>Joiner: Create Answer</h3>
-              <textarea id="offerIn" placeholder="Paste host offer JSON here"></textarea>
+              <textarea id="offerIn" placeholder="Paste host offer here"></textarea>
               <button id="createAnswerBtn" type="button">Create Answer</button>
-              <textarea id="answerOut" readonly placeholder="Send this answer JSON back to host"></textarea>
+              <textarea id="answerOut" readonly placeholder="Send this answer back to host"></textarea>
             </article>
 
             <article class="signal-card host-only">
               <h3>Host: Apply Answer</h3>
-              <textarea id="answerIn" placeholder="Paste answer JSON from that player"></textarea>
+              <textarea id="answerIn" placeholder="Paste answer from that player"></textarea>
               <button id="applyAnswerBtn" type="button">Apply Answer</button>
             </article>
           </div>
@@ -211,6 +223,7 @@
         <article class="info-card">
           <h3>Credits</h3>
           <p>Created with GitHub Copilot (GPT-5.3-Codex).</p>
+          <p>Be a host: <a href="/index.html?host=true">Open Host Match</a></p>
         </article>
       </section>
     </div>
