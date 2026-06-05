@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pebolim | HTML5 Online Multiplayer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="title-wrap">
+        <p class="eyebrow">ONLINE BATTLE</p>
+        <h1 class="brand-title">Pebolim</h1>
+        <p class="page-links"><button id="openInfoBtn" type="button">How To Play + Credits</button></p>
+      </section>
+
+      <section class="game-wrap" aria-label="Foosball playfield and controls">
+        <header class="hud">
+          <div class="score-card team-left">
+            <span class="team-name" id="teamLeftName">Team Blue</span>
+            <span class="score" id="scoreLeft">0</span>
+          </div>
+          <div class="hud-center">
+            <span id="statusText">First team to 7 wins</span>
+            <button id="resetBtn" type="button">Reset Match</button>
+          </div>
+          <div class="score-card team-right">
+            <span class="team-name" id="teamRightName">Team Orange</span>
+            <span class="score" id="scoreRight">0</span>
+          </div>
+        </header>
+
+        <div class="canvas-frame">
+          <canvas id="gameCanvas" width="1200" height="700" aria-label="Foosball game canvas"></canvas>
+        </div>
+
+        <aside class="controls-panel">
+          <h2>Control Layout</h2>
+          <div class="controls-grid">
+            <article>
+              <h3>Host Player</h3>
+              <ul>
+                <li>Moves selected host rod: W / S</li>
+                <li>Spin selected host rod: Space</li>
+                <li>Select host rod in Online Match panel</li>
+              </ul>
+            </article>
+            <article>
+              <h3>Remote Player</h3>
+              <ul>
+                <li>Move assigned rod: W / S</li>
+                <li>Spin assigned rod: Space</li>
+                <li>Host assigns one rod per connected player</li>
+                <li>Host can repeat offers for many players</li>
+              </ul>
+            </article>
+          </div>
+          <p class="tip">Multiple players can be connected on each side by assigning different rods.</p>
+        </aside>
+
+        <aside class="net-panel" aria-label="Online multiplayer setup">
+          <h2>Online Match (WebRTC, no backend)</h2>
+          <p class="tip">Choose Host on one device and Join on others. Exchange signaling JSON manually.</p>
+
+          <div class="mode-row">
+            <label for="netMode">Mode</label>
+            <select id="netMode">
+              <option value="host" selected>Host Match</option>
+              <option value="client">Join Match</option>
+            </select>
+          </div>
+
+          <div class="mode-row host-only">
+            <label for="rodsPerSide">Rods per side</label>
+            <select id="rodsPerSide">
+              <option value="2">2 (Goalie + Attack)</option>
+              <option value="3">3 (Goalie + Mid + Attack)</option>
+              <option value="4" selected>4 (Goalie + Defense + Mid + Attack)</option>
+            </select>
+          </div>
+
+          <div class="mode-row host-only">
+            <label for="leftTeamNameInput">Left team name</label>
+            <input id="leftTeamNameInput" type="text" maxlength="22" value="Team Blue" />
+          </div>
+
+          <div class="mode-row host-only">
+            <label for="rightTeamNameInput">Right team name</label>
+            <input id="rightTeamNameInput" type="text" maxlength="22" value="Team Orange" />
+          </div>
+
+          <div class="mode-row host-only start-row">
+            <span>Ready?</span>
+            <button id="startGameBtn" type="button">Start Game</button>
+          </div>
+
+          <div class="mode-row">
+            <label for="hostRodSelect">Host rod (W/S)</label>
+            <select id="hostRodSelect">
+              <option value="left-goalie">Blue Goalie</option>
+              <option value="left-defense">Blue Defense</option>
+              <option value="left-mid">Blue Mid</option>
+              <option value="left-attack">Blue Attack</option>
+              <option value="right-goalie">Orange Goalie</option>
+              <option value="right-defense">Orange Defense</option>
+              <option value="right-mid">Orange Mid</option>
+              <option value="right-attack">Orange Attack</option>
+            </select>
+          </div>
+
+          <div class="signal-grid">
+            <article class="signal-card host-only">
+              <h3>Host: Create Offer</h3>
+              <label for="assignRodSelect">Assign rod to next joiner</label>
+              <select id="assignRodSelect">
+                <option value="left-goalie">Blue Goalie</option>
+                <option value="left-defense">Blue Defense</option>
+                <option value="left-mid">Blue Mid</option>
+                <option value="left-attack">Blue Attack</option>
+                <option value="right-goalie">Orange Goalie</option>
+                <option value="right-defense">Orange Defense</option>
+                <option value="right-mid">Orange Mid</option>
+                <option value="right-attack">Orange Attack</option>
+              </select>
+              <button id="createOfferBtn" type="button">Create Offer</button>
+              <textarea id="offerOut" readonly placeholder="Share this offer JSON with one player"></textarea>
+            </article>
+
+            <article class="signal-card client-only">
+              <h3>Joiner: Create Answer</h3>
+              <textarea id="offerIn" placeholder="Paste host offer JSON here"></textarea>
+              <button id="createAnswerBtn" type="button">Create Answer</button>
+              <textarea id="answerOut" readonly placeholder="Send this answer JSON back to host"></textarea>
+            </article>
+
+            <article class="signal-card host-only">
+              <h3>Host: Apply Answer</h3>
+              <textarea id="answerIn" placeholder="Paste answer JSON from that player"></textarea>
+              <button id="applyAnswerBtn" type="button">Apply Answer</button>
+            </article>
+          </div>
+
+          <div class="status-strip">
+            <span id="netStatus">Host mode: create offer, share it, then apply answer</span>
+            <span id="playerRole">Role: Host (W/S on Blue Defense)</span>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div id="infoModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="infoModalTitle">
+      <div class="modal-backdrop" data-close-info="true"></div>
+      <section class="modal-panel">
+        <header class="modal-header">
+          <h2 id="infoModalTitle">Pebolim Info</h2>
+          <button id="closeInfoBtn" type="button" class="close-btn" aria-label="Close info">Close</button>
+        </header>
+
+        <article class="info-card">
+          <h3>Game Instructions</h3>
+          <ol>
+            <li>Open the game on one browser tab/device and pick <strong>Host Match</strong> for online play.</li>
+            <li>For each remote player: select a rod, create an offer, send that JSON to the joiner.</li>
+            <li>Joiners choose <strong>Join Match</strong>, paste the offer, create an answer, and send it back to host.</li>
+            <li>Host pastes each answer and applies it to connect players one by one.</li>
+            <li>First team to 7 goals wins.</li>
+          </ol>
+        </article>
+
+        <article class="info-card">
+          <h3>Controls</h3>
+          <ul>
+            <li>Joiner controls assigned rod with <strong>W / S</strong>.</li>
+            <li>Host controls one selected rod with <strong>W / S</strong>.</li>
+            <li>Spin controlled rod with <strong>Space</strong>.</li>
+            <li>Reset Match restarts score and ball position.</li>
+          </ul>
+        </article>
+
+        <article class="info-card">
+          <h3>Credits</h3>
+          <p>Created with GitHub Copilot (GPT-5.3-Codex).</p>
+        </article>
+      </section>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
