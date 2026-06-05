@@ -10,6 +10,7 @@ const resetBtn = document.getElementById("resetBtn");
 
 const netModeDisplayEl = document.getElementById("netModeDisplay");
 const rodsPerSideEl = document.getElementById("rodsPerSide");
+const matchNameInputEl = document.getElementById("matchNameInput");
 const leftTeamNameInputEl = document.getElementById("leftTeamNameInput");
 const leftTeamColorSelectEl = document.getElementById("leftTeamColorSelect");
 const rightTeamNameInputEl = document.getElementById("rightTeamNameInput");
@@ -56,6 +57,10 @@ const TEAM_COLOR_OPTIONS = {
 };
 const DEFAULT_TEAM_COLORS = { left: leftTeamColor, right: rightTeamColor };
 const CAN_HOST = new URLSearchParams(window.location.search).get("host") === "true";
+const SIGNAL_ENVELOPE_VERSION = 1;
+const SIGNAL_TOKEN_PREFIX = "pebolim1:";
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 function initialModeFromQuery() {
   return CAN_HOST ? "host" : "client";
@@ -106,6 +111,109 @@ function hexToRgba(hex, alpha) {
   const g = Number.parseInt(clean.slice(2, 4), 16);
   const b = Number.parseInt(clean.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getMatchSecret() {
+  return matchNameInputEl?.value.trim() ?? "";
+}
+
+function requireMatchSecret() {
+  const secret = getMatchSecret();
+  if (secret) {
+    return secret;
+  }
+
+  matchNameInputEl?.focus();
+  setNetStatus("Match name is required");
+  return null;
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function deriveSignalKey(secret, saltBytes) {
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(secret),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 150000,
+      hash: "SHA-256",
+    },
+    baseKey,
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function maybeEncryptSignalText(plainText) {
+  const secret = requireMatchSecret();
+  if (!secret) {
+    throw new Error("missing-secret");
+  }
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveSignalKey(secret, salt);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    textEncoder.encode(plainText)
+  );
+
+  const encryptedBytes = new Uint8Array(encrypted);
+  const combined = new Uint8Array(1 + salt.length + iv.length + encryptedBytes.length);
+  combined[0] = SIGNAL_ENVELOPE_VERSION;
+  combined.set(salt, 1);
+  combined.set(iv, 1 + salt.length);
+  combined.set(encryptedBytes, 1 + salt.length + iv.length);
+
+  return `${SIGNAL_TOKEN_PREFIX}${bytesToBase64(combined)}`;
+}
+
+async function maybeDecryptSignalText(rawText) {
+  if (!rawText.startsWith(SIGNAL_TOKEN_PREFIX)) {
+    return rawText;
+  }
+
+  const secret = requireMatchSecret();
+  if (!secret) {
+    throw new Error("missing-secret");
+  }
+
+  const combined = base64ToBytes(rawText.slice(SIGNAL_TOKEN_PREFIX.length));
+  const version = combined[0];
+  if (version !== SIGNAL_ENVELOPE_VERSION) {
+    throw new Error("unsupported-envelope-version");
+  }
+
+  const salt = combined.slice(1, 17);
+  const iv = combined.slice(17, 29);
+  const data = combined.slice(29);
+  const key = await deriveSignalKey(secret, salt);
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+  return textDecoder.decode(decrypted);
 }
 
 const MASTER_ROD_DEFS = [
@@ -1278,6 +1386,10 @@ async function createOfferForJoiner() {
     return;
   }
 
+  if (!requireMatchSecret()) {
+    return;
+  }
+
   const assignedRodId = assignRodSelectEl.value;
   const peerId = `p-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -1305,7 +1417,7 @@ async function createOfferForJoiner() {
     sdp: pc.localDescription,
   };
 
-  offerOutEl.value = JSON.stringify(payload, null, 2);
+  offerOutEl.value = await maybeEncryptSignalText(JSON.stringify(payload, null, 2));
   setNetStatus(`Offer created for ${rodLabel(assignedRodId)}. Waiting for answer...`);
 }
 
@@ -1315,11 +1427,16 @@ async function applyJoinerAnswer() {
     return;
   }
 
+  if (!requireMatchSecret()) {
+    return;
+  }
+
   let payload;
   try {
-    payload = JSON.parse(answerInEl.value);
+    const decodedAnswer = await maybeDecryptSignalText(answerInEl.value);
+    payload = JSON.parse(decodedAnswer);
   } catch (_) {
-    setNetStatus("Answer JSON is invalid");
+    setNetStatus(getMatchSecret() ? "Answer is invalid or Match name is wrong" : "Answer is invalid");
     return;
   }
 
@@ -1346,11 +1463,16 @@ async function createAnswerFromOffer() {
     return;
   }
 
+  if (!requireMatchSecret()) {
+    return;
+  }
+
   let payload;
   try {
-    payload = JSON.parse(offerInEl.value);
+    const decodedOffer = await maybeDecryptSignalText(offerInEl.value);
+    payload = JSON.parse(decodedOffer);
   } catch (_) {
-    setNetStatus("Offer JSON is invalid");
+    setNetStatus(getMatchSecret() ? "Offer is invalid or Match name is wrong" : "Offer is invalid");
     return;
   }
 
@@ -1435,7 +1557,7 @@ async function createAnswerFromOffer() {
     sdp: pc.localDescription,
   };
 
-  answerOutEl.value = JSON.stringify(answerPayload, null, 2);
+  answerOutEl.value = await maybeEncryptSignalText(JSON.stringify(answerPayload, null, 2));
   setNetStatus("Answer created. Send it back to host.");
   refreshRoleText();
 }
@@ -1650,6 +1772,32 @@ copyJsonButtons.forEach((button) => {
       });
   });
 });
+
+let lastAnswerAutoCopyAt = 0;
+
+function autoCopyAnswerOut() {
+  const now = Date.now();
+  if (now - lastAnswerAutoCopyAt < 150) {
+    return;
+  }
+  lastAnswerAutoCopyAt = now;
+
+  const value = answerOutEl?.value.trim();
+  if (!value) {
+    return;
+  }
+
+  copyTextToClipboard(value)
+    .then(() => {
+      setNetStatus("Answer JSON copied to clipboard");
+    })
+    .catch(() => {
+      setNetStatus("Failed to copy answer JSON");
+    });
+}
+
+answerOutEl?.addEventListener("focus", autoCopyAnswerOut);
+answerOutEl?.addEventListener("click", autoCopyAnswerOut);
 
 openInfoBtn?.addEventListener("click", () => {
   setInfoModalOpen(true);
